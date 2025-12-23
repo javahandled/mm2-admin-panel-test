@@ -1,0 +1,103 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+-- ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "GrayGridGui"
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main draggable frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.fromScale(0.4, 0.3) -- Auto scales for mobile/PC
+mainFrame.Position = UDim2.fromScale(0.3, 0.35)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+-- Rounded corners
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- Grid layout
+local grid = Instance.new("UIGridLayout")
+grid.CellPadding = UDim2.fromScale(0.05, 0.08)
+grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+grid.VerticalAlignment = Enum.VerticalAlignment.Center
+grid.Parent = mainFrame
+
+-- Auto resize cells
+local function updateGrid()
+	local size = mainFrame.AbsoluteSize
+	grid.CellSize = UDim2.fromOffset(
+		(size.X - 40) / 3,
+		(size.Y - 40) / 2
+	)
+end
+
+mainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateGrid)
+updateGrid()
+
+-- Create 6 gray squares
+for i = 1, 6 do
+	local square = Instance.new("Frame")
+	square.BackgroundColor3 = Color3.fromRGB(130, 130, 130)
+	square.BorderSizePixel = 0
+
+	local sqCorner = Instance.new("UICorner")
+	sqCorner.CornerRadius = UDim.new(0, 8)
+	sqCorner.Parent = square
+
+	square.Parent = mainFrame
+end
+
+----------------------------------------------------------------
+-- Dragging (mouse + touch)
+----------------------------------------------------------------
+local dragging = false
+local dragStart
+local startPos
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	mainFrame.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if dragging and
+		(input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch) then
+		updateDrag(input)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+	or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = false
+	end
+end)
